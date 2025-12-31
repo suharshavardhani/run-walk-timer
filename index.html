@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Run–Walk Interval Timer</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #0b1020; color: #e9eefc; display: grid; place-items: center; min-height: 100vh; }
+    .card {
+      width: min(720px, 92vw);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    }
+    h1 { margin: 0 0 12px; font-size: 20px; opacity: 0.95; }
+    .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+    .big {
+      font-size: 56px;
+      font-weight: 750;
+      letter-spacing: 0.5px;
+      margin: 10px 0 4px;
+    }
+    .label {
+      font-size: 22px;
+      font-weight: 650;
+      margin: 6px 0 0;
+    }
+    .sub {
+      opacity: 0.85;
+      margin: 6px 0 14px;
+      line-height: 1.4;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 650;
+      cursor: pointer;
+      background: #4c7dff;
+      color: #0b1020;
+    }
+    button.secondary { background: rgba(255,255,255,0.12); color: #e9eefc; }
+    button.danger { background: #ff5a7a; color: #0b1020; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 720px) {
+      .grid { grid-template-columns: 1.2fr 0.8fr; }
+    }
+    .panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    input[type="number"]{
+      width: 90px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(0,0,0,0.15);
+      color: #e9eefc;
+      font-size: 14px;
+      outline: none;
+    }
+    .muted { opacity: 0.78; font-size: 13px; }
+    .progress {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: rgba(76,125,255,0.95);
+    }
+    .log { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; opacity: 0.9; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>Run–Walk Timer</h1>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="row" style="justify-content: space-between;">
+          <div class="pill" id="phasePill">Ready</div>
+          <div class="pill" id="roundPill">Round: –</div>
+        </div>
+
+        <div class="label" id="instruction">Press Start</div>
+        <div class="big" id="timeLeft">00:00</div>
+        <div class="sub" id="nextUp">Next: –</div>
+
+        <div class="progress" aria-label="progress">
+          <div class="bar" id="bar"></div>
+        </div>
+
+        <div class="row" style="margin-top: 14px;">
+          <button id="startBtn">Start</button>
+          <button class="secondary" id="pauseBtn" disabled>Pause</button>
+          <button class="danger" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="row" style="margin-top: 12px;">
+          <label class="pill">
+            <input type="checkbox" id="beepToggle" checked />
+            Beep on change
+          </label>
+          <label class="pill">
+            <input type="checkbox" id="speechToggle" />
+            Speak instructions
+          </label>
+        </div>
+
+        <div class="muted" style="margin-top: 10px;">
+          Tip: If speech doesn’t work, click once on the page first (some browsers require a user gesture).
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
+          <div><strong>Plan</strong></div>
+          <div class="muted">customize repeats</div>
+        </div>
+
+        <div class="row" style="margin-bottom: 10px;">
+          <div class="pill">Warm-up: Walk 5:00</div>
+          <div class="pill">Run 0:30</div>
+          <div class="pill">Walk 1:30</div>
+        </div>
+
+        <div class="row" style="margin-bottom: 10px;">
+          <label class="pill">
+            Repeats:
+            <input type="number" id="repeatsInput" min="1" max="20" value="8" />
+          </label>
+        </div>
+
+        <div class="pill" style="margin-bottom: 10px;">Cool-down: Walk 5:00</div>
+
+        <div class="muted">Status log</div>
+        <div class="log" id="log" style="margin-top: 8px; white-space: pre-wrap;"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ---- Config (seconds) ----
+  const WARMUP = 5 * 60;
+  const RUN = 30;
+  const WALK = 90;
+  const COOLDOWN = 5 * 60;
+
+  // ---- State ----
+  let timer = null;
+  let plan = [];
+  let idx = 0;
+  let remaining = 0;
+  let running = false;
+  let paused = false;
+
+  const el = (id) => document.getElementById(id);
+  const startBtn = el("startBtn");
+  const pauseBtn = el("pauseBtn");
+  const resetBtn = el("resetBtn");
+  const repeatsInput = el("repeatsInput");
+  const beepToggle = el("beepToggle");
+  const speechToggle = el("speechToggle");
+  const phasePill = el("phasePill");
+  const roundPill = el("roundPill");
+  const instruction = el("instruction");
+  const timeLeft = el("timeLeft");
+  const nextUp = el("nextUp");
+  const bar = el("bar");
+  const logEl = el("log");
+
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const m = String(Math.floor(sec / 60)).padStart(2, "0");
+    const s = String(sec % 60).padStart(2, "0");
+    return `${m}:${s}`;
+  }
+
+  function writeLog(text) {
+    const t = new Date().toLocaleTimeString([], {hour: "2-digit", minute:"2-digit", second:"2-digit"});
+    logEl.textContent = `[${t}] ${text}\n` + logEl.textContent;
+  }
+
+  // --- Beep ---
+  function beep() {
+    if (!beepToggle.checked) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioCtx();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = "sine";
+      o.frequency.value = 880;
+      g.gain.value = 0.06;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      setTimeout(() => { o.stop(); ctx.close(); }, 180);
+    } catch (_) {}
+  }
+
+  // --- Speech ---
+  function speak(text) {
+    if (!speechToggle.checked) return;
+    if (!("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      window.speechSynthesis.speak(u);
+    } catch (_) {}
+  }
+
+  function buildPlan() {
+    const repeats = Math.max(1, Math.min(20, parseInt(repeatsInput.value || "8", 10)));
+    repeatsInput.value = repeats;
+
+    const steps = [];
+    steps.push({ name: "Warm-up", verb: "Walk", seconds: WARMUP, roundText: "Warm-up" });
+
+    for (let i = 1; i <= repeats; i++) {
+      steps.push({ name: "Run", verb: "Run", seconds: RUN, roundText: `Intervals ${i}/${repeats}` });
+      steps.push({ name: "Walk", verb: "Walk", seconds: WALK, roundText: `Intervals ${i}/${repeats}` });
+    }
+
+    steps.push({ name: "Cool-down", verb: "Walk", seconds: COOLDOWN, roundText: "Cool-down" });
+    return steps;
+  }
+
+  function updateUI() {
+    if (!plan.length) {
+      phasePill.textContent = "Ready";
+      roundPill.textContent = "Round: –";
+      instruction.textContent = "Press Start";
+      timeLeft.textContent = "00:00";
+      nextUp.textContent = "Next: –";
+      bar.style.width = "0%";
+      document.title = "Run–Walk Timer";
+      return;
+    }
+
+    const step = plan[idx];
+    phasePill.textContent = step.name;
+    roundPill.textContent = `Round: ${step.roundText}`;
+
+    instruction.textContent = `${step.verb} now`;
+    timeLeft.textContent = fmt(remaining);
+
+    const next = plan[idx + 1];
+    nextUp.textContent = next ? `Next: ${next.verb} (${next.name})` : "Next: Done";
+
+    const pct = step.seconds ? (1 - (remaining / step.seconds)) * 100 : 0;
+    bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+
+    document.title = `${fmt(remaining)} • ${step.verb}`;
+  }
+
+  function startStep(announce = true) {
+    const step = plan[idx];
+    remaining = step.seconds;
+
+    updateUI();
+
+    if (announce) {
+      beep();
+      // Friendly phrasing for speech
+      if (step.name === "Warm-up") speak("Start warm up. Walk for five minutes.");
+      else if (step.name === "Cool-down") speak("Start cool down. Walk for five minutes.");
+      else speak(`Now ${step.verb.toLowerCase()} for ${step.seconds} seconds.`);
+      writeLog(`→ ${step.name}: ${step.verb} for ${fmt(step.seconds)}`);
+    }
+  }
+
+  function tick() {
+    if (!running || paused) return;
+
+    remaining -= 1;
+
+    // Optional: call out last 3 seconds (beep only)
+    // if (remaining > 0 && remaining <= 3) beep();
+
+    updateUI();
+
+    if (remaining <= 0) {
+      idx += 1;
+      if (idx >= plan.length) {
+        stopAll(true);
+        return;
+      }
+      startStep(true);
+    }
+  }
+
+  function stopAll(finished = false) {
+    clearInterval(timer);
+    timer = null;
+    running = false;
+    paused = false;
+
+    pauseBtn.textContent = "Pause";
+    pauseBtn.disabled = true;
+    startBtn.disabled = false;
+
+    if (finished) {
+      phasePill.textContent = "Done 🎉";
+      instruction.textContent = "Workout complete";
+      nextUp.textContent = "Next: –";
+      bar.style.width = "100%";
+      timeLeft.textContent = "00:00";
+      beep();
+      speak("Workout complete. Great job.");
+      writeLog("✅ Finished workout");
+      document.title = "Done • Run–Walk Timer";
+    }
+  }
+
+  function start() {
+    if (running) return;
+    plan = buildPlan();
+    idx = 0;
+
+    running = true;
+    paused = false;
+
+    startBtn.disabled = true;
+    pauseBtn.disabled = false;
+
+    startStep(true);
+    timer = setInterval(tick, 1000);
+  }
+
+  function pauseResume() {
+    if (!running) return;
+    paused = !paused;
+    pauseBtn.textContent = paused ? "Resume" : "Pause";
+    writeLog(paused ? "⏸ Paused" : "▶ Resumed");
+    if (!paused) {
+      beep();
+      speak("Resumed.");
+    }
+  }
+
+  function reset() {
+    clearInterval(timer);
+    timer = null;
+    plan = [];
+    idx = 0;
+    remaining = 0;
+    running = false;
+    paused = false;
+    startBtn.disabled = false;
+    pauseBtn.disabled = true;
+    pauseBtn.textContent = "Pause";
+    logEl.textContent = "";
+    updateUI();
+    writeLog("↩ Reset");
+  }
+
+  // Events
+  startBtn.addEventListener("click", start);
+  pauseBtn.addEventListener("click", pauseResume);
+  resetBtn.addEventListener("click", reset);
+
+  // Initialize
+  updateUI();
+  writeLog("Ready. Set repeats and press Start.");
+</script>
+</body>
+</html>
