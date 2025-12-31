@@ -2,8 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Run–Walk Interval Timer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Run–Walk Timer</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0b1020" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RunWalk" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
   <style>
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     body { margin: 0; background: #0b1020; color: #e9eefc; display: grid; place-items: center; min-height: 100vh; }
@@ -17,82 +26,37 @@
     }
     h1 { margin: 0 0 12px; font-size: 20px; opacity: 0.95; }
     .row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
-    .big {
-      font-size: 56px;
-      font-weight: 750;
-      letter-spacing: 0.5px;
-      margin: 10px 0 4px;
-    }
-    .label {
-      font-size: 22px;
-      font-weight: 650;
-      margin: 6px 0 0;
-    }
-    .sub {
-      opacity: 0.85;
-      margin: 6px 0 14px;
-      line-height: 1.4;
-    }
+    .big { font-size: 56px; font-weight: 750; letter-spacing: 0.5px; margin: 10px 0 4px; }
+    .label { font-size: 22px; font-weight: 650; margin: 6px 0 0; }
+    .sub { opacity: 0.85; margin: 6px 0 14px; line-height: 1.4; }
     .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 999px;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.10);
       font-size: 14px;
     }
     button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-weight: 650;
-      cursor: pointer;
-      background: #4c7dff;
-      color: #0b1020;
+      border: 0; border-radius: 12px; padding: 12px 14px;
+      font-weight: 650; cursor: pointer;
+      background: #4c7dff; color: #0b1020;
+      -webkit-tap-highlight-color: transparent;
     }
     button.secondary { background: rgba(255,255,255,0.12); color: #e9eefc; }
     button.danger { background: #ff5a7a; color: #0b1020; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    @media (min-width: 720px) {
-      .grid { grid-template-columns: 1.2fr 0.8fr; }
-    }
-    .panel {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 14px;
-      padding: 14px;
-    }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 720px) { .grid { grid-template-columns: 1.2fr 0.8fr; } }
+    .panel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; padding: 14px; }
     input[type="number"]{
-      width: 90px;
-      padding: 10px 10px;
-      border-radius: 12px;
+      width: 60px; padding: 8px 8px; border-radius: 8px;
       border: 1px solid rgba(255,255,255,0.15);
-      background: rgba(0,0,0,0.15);
-      color: #e9eefc;
-      font-size: 14px;
-      outline: none;
+      background: rgba(0,0,0,0.15); color: #e9eefc; font-size: 13px; outline: none;
+      margin: 0 4px;
     }
     .muted { opacity: 0.78; font-size: 13px; }
-    .progress {
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.10);
-      overflow: hidden;
-      margin-top: 10px;
-    }
-    .bar {
-      height: 100%;
-      width: 0%;
-      background: rgba(76,125,255,0.95);
-    }
+    .progress { height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.10); overflow: hidden; margin-top: 10px; }
+    .bar { height: 100%; width: 0%; background: rgba(76,125,255,0.95); }
     .log { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; opacity: 0.9; }
   </style>
 </head>
@@ -112,7 +76,7 @@
         <div class="big" id="timeLeft">00:00</div>
         <div class="sub" id="nextUp">Next: –</div>
 
-        <div class="progress" aria-label="progress">
+        <div class="progress">
           <div class="bar" id="bar"></div>
         </div>
 
@@ -122,42 +86,84 @@
           <button class="danger" id="resetBtn">Reset</button>
         </div>
 
-        <div class="row" style="margin-top: 12px;">
-          <label class="pill">
-            <input type="checkbox" id="beepToggle" checked />
-            Beep on change
-          </label>
-          <label class="pill">
-            <input type="checkbox" id="speechToggle" />
-            Speak instructions
+        <div class="row" style="margin-top: 12px; flex-wrap: wrap;">
+          <label class="pill"><input type="checkbox" id="beepToggle" checked /> Beep</label>
+          <label class="pill"><input type="checkbox" id="speechToggle" /> Speak</label>
+          <label class="pill"><input type="checkbox" id="motivationToggle" checked /> Motivate</label>
+          <label class="pill"><input type="checkbox" id="musicToggle" checked /> Music</label>
+        </div>
+
+        <div class="row" style="margin-top: 8px; flex-wrap: wrap;">
+          <label class="pill">Voice:
+            <select id="voiceSelect" style="background: rgba(0,0,0,0.2); color: #e9eefc; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 6px; font-size: 12px; margin-left: 6px;">
+              <option value="default">Default</option>
+            </select>
           </label>
         </div>
 
+        <div class="row" style="margin-top: 8px; flex-wrap: wrap;">
+          <label class="pill">Search YouTube:
+            <input type="text" id="searchQuery" placeholder="Search for music..." style="background: rgba(0,0,0,0.15); color: #e9eefc; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 8px; font-size: 12px; margin-left: 6px; width: 160px; outline: none;" />
+            <button id="searchVideos" style="background: rgba(76,125,255,0.8); border: none; color: white; padding: 4px 8px; border-radius: 6px; font-size: 12px; margin-left: 4px; cursor: pointer;">Search</button>
+          </label>
+        </div>
+
+        <div style="margin-top: 8px; max-height: 150px; overflow-y: auto;" id="searchResults"></div>
+
+        <div class="row" style="margin-top: 8px; flex-wrap: wrap;">
+          <div class="pill" id="currentVideo" style="display: none;">
+            <span id="videoTitle">No video loaded</span>
+            <button id="removeVideo" style="background: rgba(255,255,255,0.2); border: none; color: #ff5a7a; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 6px; cursor: pointer;">×</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 8px;">
+          <div id="youtube-player" style="display: none;"></div>
+        </div>
+
         <div class="muted" style="margin-top: 10px;">
-          Tip: If speech doesn’t work, click once on the page first (some browsers require a user gesture).
+          iPhone note: audio/speech may require a tap first.
         </div>
       </div>
 
       <div class="panel">
         <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
           <div><strong>Plan</strong></div>
-          <div class="muted">customize repeats</div>
+          <div class="muted">works offline after first load</div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <div class="row" style="margin-bottom: 8px; flex-wrap: wrap;">
+            <label class="pill">Warm-up Walk:
+              <input type="number" id="warmupInput" min="1" max="30" value="5" /> min
+            </label>
+            <label class="pill">Cool-down Walk:
+              <input type="number" id="cooldownInput" min="1" max="30" value="5" /> min
+            </label>
+          </div>
+          <div class="row" style="margin-bottom: 8px; flex-wrap: wrap;">
+            <label class="pill">Run:
+              <input type="number" id="runInput" min="10" max="600" value="30" /> sec
+            </label>
+            <label class="pill">Walk:
+              <input type="number" id="walkInput" min="10" max="600" value="90" /> sec
+            </label>
+          </div>
+          <div class="row" style="margin-bottom: 8px;">
+            <label class="pill">Repeats:
+              <input type="number" id="repeatsInput" min="1" max="30" value="8" />
+            </label>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-bottom: 10px;">
+          <div id="planSummary">Plan: 5min walk → 8x (30s run + 90s walk) → 5min walk</div>
         </div>
 
         <div class="row" style="margin-bottom: 10px;">
-          <div class="pill">Warm-up: Walk 5:00</div>
-          <div class="pill">Run 0:30</div>
-          <div class="pill">Walk 1:30</div>
+          <button class="secondary" id="historyBtn">View History</button>
+          <button class="secondary" id="clearHistoryBtn">Clear History</button>
         </div>
-
-        <div class="row" style="margin-bottom: 10px;">
-          <label class="pill">
-            Repeats:
-            <input type="number" id="repeatsInput" min="1" max="20" value="8" />
-          </label>
-        </div>
-
-        <div class="pill" style="margin-bottom: 10px;">Cool-down: Walk 5:00</div>
 
         <div class="muted">Status log</div>
         <div class="log" id="log" style="margin-top: 8px; white-space: pre-wrap;"></div>
@@ -166,11 +172,28 @@
   </div>
 
 <script>
-  // ---- Config (seconds) ----
-  const WARMUP = 5 * 60;
-  const RUN = 30;
-  const WALK = 90;
-  const COOLDOWN = 5 * 60;
+  // Register Service Worker (offline + installable)
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js"));
+  }
+
+  // ---- Get Config (seconds) ----
+  function getConfig() {
+    const warmup = Math.max(1, Math.min(30, parseInt(el("warmupInput").value || "5", 10))) * 60;
+    const run = Math.max(10, Math.min(600, parseInt(el("runInput").value || "30", 10)));
+    const walk = Math.max(10, Math.min(600, parseInt(el("walkInput").value || "90", 10)));
+    const cooldown = Math.max(1, Math.min(30, parseInt(el("cooldownInput").value || "5", 10))) * 60;
+    const repeats = Math.max(1, Math.min(30, parseInt(el("repeatsInput").value || "8", 10)));
+
+    // Update inputs to reflect clamped values
+    el("warmupInput").value = Math.floor(warmup / 60);
+    el("runInput").value = run;
+    el("walkInput").value = walk;
+    el("cooldownInput").value = Math.floor(cooldown / 60);
+    el("repeatsInput").value = repeats;
+
+    return { warmup, run, walk, cooldown, repeats };
+  }
 
   // ---- State ----
   let timer = null;
@@ -194,6 +217,116 @@
   const nextUp = el("nextUp");
   const bar = el("bar");
   const logEl = el("log");
+  const planSummary = el("planSummary");
+  const motivationToggle = el("motivationToggle");
+  const musicToggle = el("musicToggle");
+  const voiceSelect = el("voiceSelect");
+  const searchQuery = el("searchQuery");
+  const searchVideos = el("searchVideos");
+  const searchResults = el("searchResults");
+  const currentVideo = el("currentVideo");
+  const videoTitle = el("videoTitle");
+  const removeVideo = el("removeVideo");
+  const historyBtn = el("historyBtn");
+  const clearHistoryBtn = el("clearHistoryBtn");
+
+  // Voice and Music Variables
+  let availableVoices = [];
+  let selectedVoice = null;
+  let musicAudio = null;
+  let musicContext = null;
+  let youtubePlayer = null;
+  let currentVideoId = null;
+  let currentVideoTitle = '';
+
+  // YouTube Data API Configuration
+  // Get your free API key from: https://console.cloud.google.com/apis/credentials
+  // 1. Create a new project or select existing
+  // 2. Enable YouTube Data API v3
+  // 3. Create credentials (API key)
+  // 4. Replace 'YOUR_API_KEY_HERE' with your actual key
+  const YOUTUBE_API_KEY = 'AIzaSyCMH7E6qLljkglUdUFbSDpl3JinBYZFixA';
+  const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
+
+  // Fallback mock results for demonstration (when no API key is set)
+  const fallbackResults = {
+    'blinded lights': [
+      { id: '4NRXx6U8ABQ', title: 'The Weeknd - Blinded by the Lights (Official Video)', channel: 'TheWeekndVEVO' },
+      { id: 'fHI8X4OXluQ', title: 'The Weeknd - Blinded by the Lights (Audio)', channel: 'TheWeekndVEVO' }
+    ],
+    'workout music': [
+      { id: 'uelHwf8o7_U', title: 'Epic Workout Music Mix', channel: 'WorkoutMusic' },
+      { id: 'maRGOMn4kXc', title: 'Best Workout Music Mix', channel: 'FitnessBeats' }
+    ]
+  };
+
+  // Motivational messages
+  const motivationalMessages = {
+    run: [
+      "You're doing great! Keep running!",
+      "Don't stop now, you've got this!",
+      "Push through, you're stronger than you think!",
+      "Keep that pace, you're amazing!",
+      "Your body can do it, your mind just has to catch up!",
+      "Every step is making you stronger!",
+      "You're crushing it! Keep going!"
+    ],
+    walk: [
+      "Great job! Take this recovery time.",
+      "You're doing awesome, keep walking!",
+      "Perfect form, keep it up!",
+      "You're building endurance with every step!",
+      "Stay strong, you're making progress!",
+      "Keep moving, you're doing fantastic!",
+      "This is your active recovery, you've earned it!"
+    ],
+    general: [
+      "You're unstoppable!",
+      "Every workout makes you better!",
+      "Consistency is key, and you're nailing it!",
+      "Your future self will thank you!",
+      "You showed up today, that's what matters!"
+    ]
+  };
+
+  let motivationInterval = null;
+
+  // Music tracks (using generated tones for demo - in real app you'd use actual audio files)
+  const musicTracks = {
+    'blinded-lights': {
+      name: 'Blinded Lights Style',
+      tempo: 171, // BPM
+      pattern: [
+        {freq: 523, duration: 0.25}, {freq: 659, duration: 0.25}, {freq: 784, duration: 0.5},
+        {freq: 659, duration: 0.25}, {freq: 523, duration: 0.25}, {freq: 659, duration: 0.5},
+        {freq: 440, duration: 0.5}, {freq: 523, duration: 0.5}
+      ]
+    },
+    'workout-beat': {
+      name: 'High Energy Beat',
+      tempo: 128,
+      pattern: [
+        {freq: 200, duration: 0.25}, {freq: 0, duration: 0.25}, {freq: 300, duration: 0.25}, {freq: 0, duration: 0.25},
+        {freq: 200, duration: 0.25}, {freq: 400, duration: 0.25}, {freq: 0, duration: 0.5}
+      ]
+    },
+    'electronic-energy': {
+      name: 'Electronic Energy',
+      tempo: 140,
+      pattern: [
+        {freq: 330, duration: 0.125}, {freq: 392, duration: 0.125}, {freq: 523, duration: 0.25},
+        {freq: 659, duration: 0.25}, {freq: 523, duration: 0.25}, {freq: 392, duration: 0.5}
+      ]
+    },
+    'motivational-rock': {
+      name: 'Rock Energy',
+      tempo: 120,
+      pattern: [
+        {freq: 220, duration: 0.5}, {freq: 0, duration: 0.25}, {freq: 293, duration: 0.25},
+        {freq: 220, duration: 0.25}, {freq: 0, duration: 0.25}, {freq: 293, duration: 0.5}
+      ]
+    }
+  };
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -207,7 +340,6 @@
     logEl.textContent = `[${t}] ${text}\n` + logEl.textContent;
   }
 
-  // --- Beep ---
   function beep() {
     if (!beepToggle.checked) return;
     try {
@@ -218,40 +350,603 @@
       o.type = "sine";
       o.frequency.value = 880;
       g.gain.value = 0.06;
-      o.connect(g);
-      g.connect(ctx.destination);
+      o.connect(g); g.connect(ctx.destination);
       o.start();
       setTimeout(() => { o.stop(); ctx.close(); }, 180);
     } catch (_) {}
   }
 
-  // --- Speech ---
   function speak(text) {
     if (!speechToggle.checked) return;
     if (!("speechSynthesis" in window)) return;
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.0;
-      u.pitch = 1.0;
+      
+      // Enhanced voice settings
+      u.rate = 0.9; // Slightly slower for clarity
+      u.pitch = 1.1; // Slightly higher pitch for energy
+      u.volume = 0.8; // Slightly quieter to not compete with music
+      
+      // Use selected voice if available
+      if (selectedVoice) {
+        u.voice = selectedVoice;
+      }
+      
       window.speechSynthesis.speak(u);
     } catch (_) {}
   }
 
-  function buildPlan() {
-    const repeats = Math.max(1, Math.min(20, parseInt(repeatsInput.value || "8", 10)));
-    repeatsInput.value = repeats;
+  function loadVoices() {
+    availableVoices = speechSynthesis.getVoices();
+    const voiceSelect = el("voiceSelect");
+    
+    // Clear existing options except default
+    voiceSelect.innerHTML = '<option value="default">Default</option>';
+    
+    // Add available voices, prioritizing English voices
+    const englishVoices = availableVoices.filter(voice => 
+      voice.lang.toLowerCase().includes('en')
+    );
+    
+    // Add some preferred voice types
+    const preferredVoices = englishVoices.filter(voice =>
+      voice.name.toLowerCase().includes('alex') ||
+      voice.name.toLowerCase().includes('samantha') ||
+      voice.name.toLowerCase().includes('daniel') ||
+      voice.name.toLowerCase().includes('karen') ||
+      voice.name.toLowerCase().includes('premium')
+    );
+    
+    [...preferredVoices, ...englishVoices].forEach(voice => {
+      if (!voiceSelect.querySelector(`option[value="${voice.name}"]`)) {
+        const option = document.createElement('option');
+        option.value = voice.name;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      }
+    });
+  }
 
-    const steps = [];
-    steps.push({ name: "Warm-up", verb: "Walk", seconds: WARMUP, roundText: "Warm-up" });
+  function setVoice() {
+    const voiceName = voiceSelect.value;
+    if (voiceName === 'default') {
+      selectedVoice = null;
+    } else {
+      selectedVoice = availableVoices.find(voice => voice.name === voiceName) || null;
+    }
+  }
 
-    for (let i = 1; i <= repeats; i++) {
-      steps.push({ name: "Run", verb: "Run", seconds: RUN, roundText: `Intervals ${i}/${repeats}` });
-      steps.push({ name: "Walk", verb: "Walk", seconds: WALK, roundText: `Intervals ${i}/${repeats}` });
+  function playWorkoutMusic() {
+    if (!musicToggle.checked) return;
+    
+    if (youtubePlayer && currentVideoId) {
+      // Play YouTube video
+      youtubePlayer.setVolume(40); // Lower volume for background
+      youtubePlayer.playVideo();
+      writeLog(`🎵 Playing YouTube video`);
+    } else {
+      // Fallback to generated tones if no video loaded
+      playGeneratedMusic();
+    }
+  }
+
+  async function playGeneratedMusic() {
+    try {
+      if (!musicContext) {
+        musicContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      // Resume context if suspended (required by some browsers)
+      if (musicContext.state === 'suspended') {
+        await musicContext.resume();
+      }
+      
+      const selectedTrack = musicTracks['blinded-lights'];
+      playMusicPattern(selectedTrack);
+      
+    } catch (error) {
+      console.log('Generated music playback failed:', error);
+    }
+  }
+
+  function playMusicPattern(track) {
+    if (!musicContext || !musicToggle.checked) return;
+    
+    const patternDuration = track.pattern.reduce((sum, note) => sum + note.duration, 0);
+    let currentTime = musicContext.currentTime;
+    
+    // Play the pattern once
+    track.pattern.forEach(note => {
+      if (note.freq > 0) {
+        const oscillator = musicContext.createOscillator();
+        const gainNode = musicContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(musicContext.destination);
+        
+        oscillator.frequency.value = note.freq;
+        oscillator.type = 'sine';
+        
+        // Envelope for smoother sound
+        gainNode.gain.setValueAtTime(0, currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.03, currentTime + 0.01); // Very low volume
+        gainNode.gain.linearRampToValueAtTime(0.01, currentTime + note.duration - 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, currentTime + note.duration);
+        
+        oscillator.start(currentTime);
+        oscillator.stop(currentTime + note.duration);
+      }
+      currentTime += note.duration;
+    });
+    
+    // Schedule next repetition if still running
+    if (running && !paused && musicToggle.checked) {
+      setTimeout(() => playMusicPattern(track), patternDuration * 1000);
+    }
+  }
+
+  function stopWorkoutMusic() {
+    if (youtubePlayer && currentVideoId) {
+      youtubePlayer.pauseVideo();
+    }
+    
+    if (musicContext) {
+      try {
+        musicContext.close();
+      } catch (_) {}
+      musicContext = null;
+    }
+  }
+
+  // YouTube Integration
+  function loadYouTubeAPI() {
+    if (window.YT && window.YT.Player) return;
+    
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+  }
+
+  function onYouTubeIframeAPIReady() {
+    // This function is called automatically when YouTube API is ready
+    console.log('YouTube API ready');
+  }
+
+  function extractVideoId(url) {
+    const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([\w-]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  }
+
+  async function searchYouTubeVideos() {
+    const query = searchQuery.value.trim();
+    if (!query) {
+      alert('Please enter a search term');
+      return;
     }
 
-    steps.push({ name: "Cool-down", verb: "Walk", seconds: COOLDOWN, roundText: "Cool-down" });
+    writeLog(`🔍 Searching YouTube for: ${query}`);
+    
+    // Show loading indicator
+    searchResults.innerHTML = '<div class="muted" style="padding: 8px;">🔍 Searching YouTube...</div>';
+    
+    try {
+      let results;
+      
+      if (YOUTUBE_API_KEY && YOUTUBE_API_KEY !== 'YOUR_API_KEY_HERE') {
+        // Use real YouTube Data API
+        results = await searchYouTubeAPI(query);
+      } else {
+        // Use fallback results and show setup message
+        results = findFallbackResults(query);
+        if (results.length === 0) {
+          showAPISetupMessage(query);
+          return;
+        }
+        writeLog('⚠️ Using demo results - set up API key for unlimited search');
+      }
+      
+      if (results.length === 0) {
+        searchResults.innerHTML = '<div class="muted" style="padding: 8px;">No results found for "' + query + '"</div>';
+        return;
+      }
+
+      displaySearchResults(results);
+      
+    } catch (error) {
+      writeLog('❌ Search error: ' + error.message);
+      searchResults.innerHTML = '<div class="muted" style="padding: 8px;">Search error. Please try again.</div>';
+    }
+  }
+
+  async function searchYouTubeAPI(query) {
+    const url = `${YOUTUBE_API_BASE_URL}?part=snippet&maxResults=8&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}`;
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error('API quota exceeded or invalid key');
+      }
+      throw new Error('Search request failed');
+    }
+    
+    const data = await response.json();
+    
+    return data.items.map(item => ({
+      id: item.id.videoId,
+      title: item.snippet.title,
+      channel: item.snippet.channelTitle,
+      description: item.snippet.description
+    }));
+  }
+
+  function findFallbackResults(query) {
+    const lowerQuery = query.toLowerCase();
+    
+    // Check for exact matches first
+    for (const [keyword, results] of Object.entries(fallbackResults)) {
+      if (lowerQuery.includes(keyword) || keyword.includes(lowerQuery)) {
+        return results;
+      }
+    }
+    
+    // Check for partial matches
+    const queryWords = lowerQuery.split(' ');
+    for (const [keyword, results] of Object.entries(fallbackResults)) {
+      const keywordWords = keyword.split(' ');
+      for (const queryWord of queryWords) {
+        for (const keywordWord of keywordWords) {
+          if (queryWord.length > 2 && (queryWord.includes(keywordWord) || keywordWord.includes(queryWord))) {
+            return results;
+          }
+        }
+      }
+    }
+    
+    return []; // No matches found
+  }
+
+  function displaySearchResults(results) {
+    searchResults.innerHTML = '';
+    
+    results.forEach(video => {
+      const resultDiv = document.createElement('div');
+      resultDiv.className = 'pill';
+      resultDiv.style.cssText = 'margin: 4px 0; cursor: pointer; width: 100%; justify-content: space-between;';
+      
+      const truncatedTitle = video.title.length > 50 ? video.title.substring(0, 50) + '...' : video.title;
+      const truncatedChannel = video.channel.length > 25 ? video.channel.substring(0, 25) + '...' : video.channel;
+      
+      resultDiv.innerHTML = `
+        <div style="flex: 1; overflow: hidden;">
+          <div style="font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${video.title}">${truncatedTitle}</div>
+          <div style="font-size: 11px; opacity: 0.7;" title="${video.channel}">${truncatedChannel}</div>
+        </div>
+        <button style="background: rgba(76,125,255,0.8); border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px;">Select</button>
+      `;
+      
+      resultDiv.querySelector('button').onclick = () => selectVideo(video.id, video.title);
+      searchResults.appendChild(resultDiv);
+    });
+  }
+
+  function showAPISetupMessage(query) {
+    searchResults.innerHTML = `
+      <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; margin: 4px 0;">
+        <div style="font-weight: 600; margin-bottom: 8px;">🔑 Set up YouTube API for unlimited search</div>
+        <div style="font-size: 12px; line-height: 1.4; margin-bottom: 8px;">
+          Currently using limited demo results. To search for "${query}" and any song:
+        </div>
+        <div style="font-size: 11px; line-height: 1.3; margin-bottom: 6px;">
+          1. Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: #4c7dff;">Google Cloud Console</a><br/>
+          2. Create project → Enable "YouTube Data API v3" → Create API key<br/>
+          3. Replace 'YOUR_API_KEY_HERE' in the code with your key
+        </div>
+        <div style="font-size: 10px; opacity: 0.7;">
+          Free quota: 10,000 requests/day (≈100 searches/day)
+        </div>
+      </div>
+    `;
+  }
+
+  function selectVideo(videoId, title) {
+    currentVideoId = videoId;
+    currentVideoTitle = title;
+    
+    writeLog(`🎵 Attempting to load video: ${title}`);
+    
+    // Wait for YouTube API to be ready with retry logic
+    waitForYouTubeAPI().then(() => {
+      createOrLoadVideo(videoId, title);
+    }).catch((error) => {
+      writeLog('❌ YouTube API failed to load: ' + error.message);
+      alert('YouTube API is not available. Please check your internet connection and refresh the page.');
+    });
+  }
+
+  function waitForYouTubeAPI() {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+      const maxAttempts = 30; // Wait up to 15 seconds
+      
+      const checkAPI = () => {
+        attempts++;
+        
+        if (window.YT && window.YT.Player) {
+          writeLog('✅ YouTube API is ready');
+          resolve();
+        } else if (attempts >= maxAttempts) {
+          reject(new Error('YouTube API failed to load after 15 seconds'));
+        } else {
+          writeLog(`⏳ Waiting for YouTube API... (${attempts}/${maxAttempts})`);
+          setTimeout(checkAPI, 500);
+        }
+      };
+      
+      checkAPI();
+    });
+  }
+
+  function createOrLoadVideo(videoId, title) {
+    if (!youtubePlayer) {
+      // Create YouTube player
+      try {
+        writeLog('🎵 Creating new YouTube player...');
+        youtubePlayer = new YT.Player('youtube-player', {
+          height: '0', // Hidden player for audio only
+          width: '0',
+          videoId: videoId,
+          playerVars: {
+            loop: 1,
+            playlist: videoId, // Required for looping
+            controls: 0,
+            showinfo: 0,
+            modestbranding: 1,
+            autoplay: 0,
+            enablejsapi: 1
+          },
+          events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange,
+            onError: onPlayerError
+          }
+        });
+        writeLog('✅ YouTube player created successfully');
+      } catch (error) {
+        writeLog('❌ Error creating YouTube player: ' + error.message);
+        writeLog('🔄 Trying alternative method...');
+        
+        // Try alternative method - reload the page and try again
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+        return;
+      }
+    } else {
+      // Load new video in existing player
+      try {
+        writeLog(`🎵 Loading new video in existing player: ${title}`);
+        youtubePlayer.loadVideoById(videoId);
+      } catch (error) {
+        writeLog('❌ Error loading video: ' + error.message);
+        alert('Error loading video. Please try selecting another video.');
+        return;
+      }
+    }
+
+    // Update UI
+    videoTitle.textContent = title.length > 30 ? title.substring(0, 30) + '...' : title;
+    currentVideo.style.display = 'inline-flex';
+    
+    // Clear search results
+    searchResults.innerHTML = '';
+    searchQuery.value = '';
+    
+    writeLog(`🎵 Video selected: ${title}`);
+  }
+
+  function onPlayerReady(event) {
+    writeLog('✅ YouTube player ready!');
+    
+    // Test if we can control the player
+    try {
+      youtubePlayer.setVolume(40);
+      writeLog('🎵 Volume set to 40% for background music');
+      
+      // Auto-play a short test to verify it works
+      youtubePlayer.playVideo();
+      setTimeout(() => {
+        youtubePlayer.pauseVideo();
+        writeLog('✅ Player test successful - ready for workout!');
+      }, 1000);
+      
+    } catch (error) {
+      writeLog('⚠️ Player control error: ' + error.message);
+    }
+  }
+
+  function onPlayerStateChange(event) {
+    const states = {
+      '-1': 'unstarted',
+      '0': 'ended',
+      '1': 'playing',
+      '2': 'paused',
+      '3': 'buffering',
+      '5': 'cued'
+    };
+    const stateName = states[event.data] || 'unknown';
+    writeLog(`🎵 Player state: ${stateName}`);
+    
+    // If video ends during workout, restart it
+    if (event.data === 0 && running && !paused && musicToggle.checked) {
+      writeLog('🔁 Video ended, restarting...');
+      youtubePlayer.playVideo();
+    }
+  }
+
+  function onPlayerError(event) {
+    const errorCodes = {
+      2: 'Invalid video ID',
+      5: 'HTML5 player error', 
+      100: 'Video not found or private',
+      101: 'Video cannot be embedded',
+      150: 'Video cannot be embedded (same as 101)'
+    };
+    const errorMsg = errorCodes[event.data] || 'Unknown error';
+    writeLog(`❌ YouTube error (${event.data}): ${errorMsg}`);
+    
+    alert(`Cannot play this video: ${errorMsg}\nPlease try selecting another video.`);
+    
+    // Clear the failed video selection
+    removeYouTubeVideo();
+  }
+
+  function removeYouTubeVideo() {
+    currentVideoId = null;
+    currentVideoTitle = '';
+    currentVideo.style.display = 'none';
+    videoTitle.textContent = 'No video loaded';
+    searchQuery.value = '';
+    searchResults.innerHTML = '';
+    
+    // Stop and clear player
+    if (youtubePlayer) {
+      youtubePlayer.stopVideo();
+    }
+    
+    writeLog('🎵 YouTube video removed');
+  }
+
+  // Load YouTube API on page load
+  window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+  function getRandomMotivation(type = 'general') {
+    const messages = motivationalMessages[type] || motivationalMessages.general;
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  function speakMotivation(type = 'general') {
+    if (!motivationToggle.checked) return;
+    const message = getRandomMotivation(type);
+    speak(message);
+  }
+
+  function startMotivationMessages() {
+    if (motivationInterval) clearInterval(motivationInterval);
+    
+    motivationInterval = setInterval(() => {
+      if (!running || paused) return;
+      
+      const step = plan[idx];
+      if (step && step.name === "Run") {
+        speakMotivation('run');
+      } else if (step && (step.name === "Walk" || step.name === "Warm-up" || step.name === "Cool-down")) {
+        speakMotivation('walk');
+      }
+    }, 15000); // Every 15 seconds
+  }
+
+  function stopMotivationMessages() {
+    if (motivationInterval) {
+      clearInterval(motivationInterval);
+      motivationInterval = null;
+    }
+  }
+
+  // Workout History Functions
+  function saveWorkout() {
+    const config = getConfig();
+    const workout = {
+      date: new Date().toISOString(),
+      dateFormatted: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
+      warmup: config.warmup / 60,
+      run: config.run,
+      walk: config.walk,
+      cooldown: config.cooldown / 60,
+      repeats: config.repeats,
+      completed: true,
+      duration: config.warmup + (config.run + config.walk) * config.repeats + config.cooldown
+    };
+
+    const history = getWorkoutHistory();
+    history.unshift(workout); // Add to beginning
+    
+    // Keep only last 50 workouts
+    if (history.length > 50) {
+      history.splice(50);
+    }
+    
+    localStorage.setItem('runWalkHistory', JSON.stringify(history));
+    writeLog(`✅ Workout saved to history`);
+  }
+
+  function getWorkoutHistory() {
+    try {
+      return JSON.parse(localStorage.getItem('runWalkHistory') || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function showWorkoutHistory() {
+    const history = getWorkoutHistory();
+    if (history.length === 0) {
+      alert('No workout history yet. Complete a workout to see it here!');
+      return;
+    }
+
+    let historyText = '🏃‍♀️ WORKOUT HISTORY 🏃‍♂️\n\n';
+    history.slice(0, 10).forEach((workout, i) => {
+      const totalMin = Math.floor(workout.duration / 60);
+      historyText += `${i + 1}. ${workout.dateFormatted}\n`;
+      historyText += `   ${workout.warmup}min warmup → ${workout.repeats}x (${workout.run}s run + ${workout.walk}s walk) → ${workout.cooldown}min cooldown\n`;
+      historyText += `   Total: ${totalMin} minutes\n\n`;
+    });
+
+    if (history.length > 10) {
+      historyText += `... and ${history.length - 10} more workouts\n`;
+    }
+
+    historyText += `\nTotal workouts completed: ${history.length}`;
+    alert(historyText);
+  }
+
+  function clearWorkoutHistory() {
+    if (confirm('Are you sure you want to clear all workout history? This cannot be undone.')) {
+      localStorage.removeItem('runWalkHistory');
+      writeLog('🗑️ Workout history cleared');
+      alert('Workout history cleared!');
+    }
+  }
+
+  function buildPlan() {
+    const config = getConfig();
+    const steps = [];
+    
+    steps.push({ name: "Warm-up", verb: "Walk", seconds: config.warmup, roundText: "Warm-up" });
+
+    for (let i = 1; i <= config.repeats; i++) {
+      steps.push({ name: "Run", verb: "Run", seconds: config.run, roundText: `Intervals ${i}/${config.repeats}` });
+      steps.push({ name: "Walk", verb: "Walk", seconds: config.walk, roundText: `Intervals ${i}/${config.repeats}` });
+    }
+
+    steps.push({ name: "Cool-down", verb: "Walk", seconds: config.cooldown, roundText: "Cool-down" });
     return steps;
+  }
+
+  function updatePlanSummary() {
+    const config = getConfig();
+    const warmupMin = Math.floor(config.warmup / 60);
+    const runSec = config.run;
+    const walkSec = config.walk;
+    const cooldownMin = Math.floor(config.cooldown / 60);
+    const repeats = config.repeats;
+    
+    const walkMin = walkSec >= 60 ? `${Math.floor(walkSec / 60)}:${String(walkSec % 60).padStart(2, '0')}min` : `${walkSec}s`;
+    planSummary.textContent = `Plan: ${warmupMin}min walk → ${repeats}x (${runSec}s run + ${walkMin} walk) → ${cooldownMin}min walk`;
   }
 
   function updateUI() {
@@ -269,7 +964,6 @@
     const step = plan[idx];
     phasePill.textContent = step.name;
     roundPill.textContent = `Round: ${step.roundText}`;
-
     instruction.textContent = `${step.verb} now`;
     timeLeft.textContent = fmt(remaining);
 
@@ -285,75 +979,101 @@
   function startStep(announce = true) {
     const step = plan[idx];
     remaining = step.seconds;
-
     updateUI();
 
     if (announce) {
       beep();
-      // Friendly phrasing for speech
-      if (step.name === "Warm-up") speak("Start warm up. Walk for five minutes.");
-      else if (step.name === "Cool-down") speak("Start cool down. Walk for five minutes.");
-      else speak(`Now ${step.verb.toLowerCase()} for ${step.seconds} seconds.`);
+      if (step.name === "Warm-up") {
+        const min = Math.floor(step.seconds / 60);
+        speak(`Start warm up. Walk for ${min} minute${min !== 1 ? 's' : ''}.`);
+      }
+      else if (step.name === "Cool-down") {
+        const min = Math.floor(step.seconds / 60);
+        speak(`Start cool down. Walk for ${min} minute${min !== 1 ? 's' : ''}.`);
+      }
+      else {
+        const duration = step.seconds >= 60 ? 
+          `${Math.floor(step.seconds / 60)} minute${Math.floor(step.seconds / 60) !== 1 ? 's' : ''}` : 
+          `${step.seconds} second${step.seconds !== 1 ? 's' : ''}`;
+        speak(`Now ${step.verb.toLowerCase()} for ${duration}.`);
+        
+        // Give immediate motivation for run phases
+        if (step.name === "Run" && motivationToggle.checked) {
+          setTimeout(() => speakMotivation('run'), 2000);
+        }
+      }
       writeLog(`→ ${step.name}: ${step.verb} for ${fmt(step.seconds)}`);
     }
   }
 
   function tick() {
     if (!running || paused) return;
-
     remaining -= 1;
-
-    // Optional: call out last 3 seconds (beep only)
-    // if (remaining > 0 && remaining <= 3) beep();
-
     updateUI();
 
     if (remaining <= 0) {
       idx += 1;
       if (idx >= plan.length) {
-        stopAll(true);
+        finish();
         return;
       }
       startStep(true);
     }
   }
 
-  function stopAll(finished = false) {
+  function finish() {
     clearInterval(timer);
+    stopMotivationMessages();
+    stopWorkoutMusic();
     timer = null;
     running = false;
     paused = false;
-
     pauseBtn.textContent = "Pause";
     pauseBtn.disabled = true;
     startBtn.disabled = false;
 
-    if (finished) {
-      phasePill.textContent = "Done 🎉";
-      instruction.textContent = "Workout complete";
-      nextUp.textContent = "Next: –";
-      bar.style.width = "100%";
-      timeLeft.textContent = "00:00";
-      beep();
-      speak("Workout complete. Great job.");
-      writeLog("✅ Finished workout");
-      document.title = "Done • Run–Walk Timer";
-    }
+    phasePill.textContent = "Done 🎉";
+    instruction.textContent = "Workout complete";
+    nextUp.textContent = "Next: –";
+    bar.style.width = "100%";
+    timeLeft.textContent = "00:00";
+    beep();
+    
+    // Final motivational message
+    const finalMessages = [
+      "Workout complete! You're absolutely amazing!",
+      "Fantastic job! You crushed that workout!",
+      "You did it! Every step made you stronger!",
+      "Amazing work! You should be proud of yourself!",
+      "Outstanding! You've earned this victory!"
+    ];
+    const finalMessage = finalMessages[Math.floor(Math.random() * finalMessages.length)];
+    speak(finalMessage);
+    
+    writeLog("✅ Finished workout");
+    saveWorkout(); // Save completed workout to history
+    document.title = "Done • Run–Walk Timer";
   }
 
   function start() {
     if (running) return;
     plan = buildPlan();
     idx = 0;
-
     running = true;
     paused = false;
-
     startBtn.disabled = true;
     pauseBtn.disabled = false;
-
     startStep(true);
+    startMotivationMessages(); // Start motivation messages
+    playWorkoutMusic(); // Start background music
     timer = setInterval(tick, 1000);
+    
+    // Initial motivation
+    setTimeout(() => {
+      if (motivationToggle.checked) {
+        speak(getRandomMotivation('general'));
+      }
+    }, 5000);
   }
 
   function pauseResume() {
@@ -361,14 +1081,19 @@
     paused = !paused;
     pauseBtn.textContent = paused ? "Resume" : "Pause";
     writeLog(paused ? "⏸ Paused" : "▶ Resumed");
-    if (!paused) {
-      beep();
+    if (!paused) { 
+      beep(); 
       speak("Resumed.");
+      if (motivationToggle.checked) {
+        setTimeout(() => speak("Keep going, you've got this!"), 2000);
+      }
     }
   }
 
   function reset() {
     clearInterval(timer);
+    stopMotivationMessages();
+    stopWorkoutMusic();
     timer = null;
     plan = [];
     idx = 0;
@@ -383,14 +1108,44 @@
     writeLog("↩ Reset");
   }
 
-  // Events
   startBtn.addEventListener("click", start);
   pauseBtn.addEventListener("click", pauseResume);
   resetBtn.addEventListener("click", reset);
+  historyBtn.addEventListener("click", showWorkoutHistory);
+  clearHistoryBtn.addEventListener("click", clearWorkoutHistory);
 
-  // Initialize
+  // Voice and music controls
+  voiceSelect.addEventListener("change", setVoice);
+  searchVideos.addEventListener("click", searchYouTubeVideos);
+  removeVideo.addEventListener("click", removeYouTubeVideo);
+  
+  // Allow Enter key to search
+  searchQuery.addEventListener("keypress", function(event) {
+    if (event.key === "Enter") {
+      searchYouTubeVideos();
+    }
+  });
+  
+  // Load voices when available
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = loadVoices;
+  }
+  setTimeout(loadVoices, 100); // Fallback for some browsers
+
+  // Update plan summary when inputs change
+  ["warmupInput", "runInput", "walkInput", "cooldownInput", "repeatsInput"].forEach(inputId => {
+    el(inputId).addEventListener("input", updatePlanSummary);
+  });
+
   updateUI();
-  writeLog("Ready. Set repeats and press Start.");
+  updatePlanSummary();
+  
+  // Load YouTube API
+  loadYouTubeAPI();
+  
+  const historyCount = getWorkoutHistory().length;
+  const historyText = historyCount > 0 ? ` (${historyCount} workouts logged)` : "";
+  writeLog(`Ready. Customize settings and press Start.${historyText}`);
 </script>
 </body>
 </html>
