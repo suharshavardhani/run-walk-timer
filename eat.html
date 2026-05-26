@@ -38,7 +38,7 @@
             align-items: center;
             margin-bottom: 16px;
         }
-        h1, h2, h3, h4 { margin: 0; font-weight: 800; }
+        h1, h2, h3 { margin: 0; font-weight: 800; }
         h1 { font-size: 20px; letter-spacing: -0.5px; }
         .subtitle { color: var(--text-muted); font-size: 11px; margin-top: 4px; }
         
@@ -178,7 +178,7 @@
             font-size: 14px;
             -webkit-appearance: none;
         }
-        .input-split-group input[type="number"], .setting-input {
+        .input-split-group input[type="number"] {
             flex: 1;
             background: var(--bg-input);
             border: 1px solid var(--border-color);
@@ -334,35 +334,6 @@
             font-weight: bold;
             margin-top: 16px;
         }
-
-        /* Settings CSS */
-        .settings-panel {
-            background: #0b1329;
-            border: 1px solid var(--accent);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 16px;
-        }
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        @media(min-width: 480px) {
-            .settings-grid { grid-template-columns: 1fr 1fr; }
-        }
-        .setting-field {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--bg-main);
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-        .setting-field label { font-size: 12px; color: var(--text-muted); }
-        .setting-field input { width: 65px; padding: 6px; font-size: 12px; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -377,29 +348,6 @@
             <div style="text-align: right;">
                 <div style="font-size: 8px; text-transform: uppercase; color: var(--text-muted)">Burned</div>
                 <div id="global-score" style="font-size: 16px; font-weight: 900;">0 / 28 Days</div>
-            </div>
-        </div>
-
-        <!-- Dynamic Calibration Customization Box -->
-        <div class="settings-panel">
-            <h4 style="font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px;">⚙ Calorie Baseline Settings (Customize Defaults)</h4>
-            <div class="settings-grid">
-                <div class="setting-field">
-                    <label>Ragi Porridge Base:</label>
-                    <input type="number" id="cfg-ragi" class="setting-input" value="80" oninput="updateMasterConfig()">
-                </div>
-                <div class="setting-field">
-                    <label>Black Coffee Blend:</label>
-                    <input type="number" id="cfg-coffee" class="setting-input" value="45" oninput="updateMasterConfig()">
-                </div>
-                <div class="setting-field">
-                    <label>Induction Salad (W1-3):</label>
-                    <input type="number" id="cfg-salad-ind" class="setting-input" value="180" oninput="updateMasterConfig()">
-                </div>
-                <div class="setting-field">
-                    <label>Reset Salad (W4):</label>
-                    <input type="number" id="cfg-salad-res" class="setting-input" value="270" oninput="updateMasterConfig()">
-                </div>
             </div>
         </div>
 
@@ -488,7 +436,7 @@
                             </div>
                         </div>
                         <div class="tracker-card">
-                            <div><span style="font-size:12px; font-weight:bold; display:block;">Total Coffees (w/ Milk)</span><span style="font-size:10px; color:var(--text-muted)" id="lbl-coffee-unit-cals">45 kcal ea</span></div>
+                            <div><span style="font-size:12px; font-weight:bold; display:block;">Total Coffees (w/ Milk)</span><span style="font-size:10px; color:var(--text-muted)">45 kcal ea</span></div>
                             <div class="counter-controls">
                                 <button class="counter-btn" onclick="adjustCounter('coffeeCount', -1)">-</button>
                                 <span class="counter-val" id="val-coffee" style="color: #818cf8">2</span>
@@ -568,91 +516,51 @@
     <script>
         let days = [];
         let activeDayId = 1;
-        
-        // Master calibration settings object
-        let configValues = {
-            ragi: 80,
-            coffee: 45,
-            saladInduction: 180,
-            saladReset: 270
-        };
 
         function initApp() {
-            // Load custom configurations if they exist
-            const savedConfig = localStorage.getItem('metabolic_tracker_config_v1');
-            if (savedConfig) {
-                configValues = JSON.parse(savedConfig);
-                document.getElementById('cfg-ragi').value = configValues.ragi;
-                document.getElementById('cfg-coffee').value = configValues.coffee;
-                document.getElementById('cfg-salad-ind').value = configValues.saladInduction;
-                document.getElementById('cfg-salad-res').value = configValues.saladReset;
-            }
-
-            // Version v7 tracks structures cleanly with active calibration logic
-            const savedDays = localStorage.getItem('metabolic_tracker_days_native_v7');
-            if (savedDays) {
-                days = JSON.parse(savedDays);
+            // Version updated to v6 to maintain clean setup
+            const saved = localStorage.getItem('metabolic_tracker_days_native_v6');
+            if (saved) {
+                days = JSON.parse(saved);
             } else {
-                buildFreshDataset();
+                for (let i = 1; i <= 28; i++) {
+                    const isWeek4 = i > 21;
+                    days.push({
+                        id: i,
+                        week: Math.ceil(i / 7),
+                        phase: isWeek4 ? 'Metabolic Reset Break' : 'Fat Loss Induction Phase',
+                        targetCalories: isWeek4 ? 1900 : 1450,
+                        weight: '',
+                        manualCalories: 0,
+                        activityDone: false,
+                        activityType: '10k Steps', 
+                        datesCount: 5,
+                        eggCount: 6,
+                        coffeeCount: 2,
+                        dumbbellLifts: 0,
+                        situps: 0,
+                        breakfastItems: [
+                            { id: 'b1', label: 'Coffee #1', calories: 45, checked: false },
+                            { id: 'b2', label: 'Ragi Porridge w/ Curd', calories: 220, checked: false }
+                        ],
+                        lunchItems: [
+                            { id: 'l1', label: isWeek4 ? 'Big Salad (Doubled Base + 2 tbsp Ranch)' : 'Big Salad (Doubled Base + 1 tbsp Ranch)', calories: isWeek4 ? 270 : 180, checked: false }
+                        ],
+                        meals: [
+                            { key: 'snack', section: 'Snack', label: isWeek4 ? 'Coffee #2 + Protein Core + Handful Nuts' : 'Coffee #2 + Protein Core (Shake/Yogurt)', calories: isWeek4 ? 300 : 205, checked: false },
+                            { key: 'dinner', section: 'Dinner', label: isWeek4 ? 'Greens + 1 Cup Brown Rice / 2 Rotis' : 'Greens tossed in Spinach & Kale', calories: isWeek4 ? 300 : 100, checked: false }
+                        ],
+                        burned: false,
+                        finalCalculatedCalories: 0
+                    });
+                }
             }
             renderSidebar();
             loadActiveDay();
         }
 
-        function buildFreshDataset() {
-            days = [];
-            for (let i = 1; i <= 28; i++) {
-                const isWeek4 = i > 21;
-                days.push({
-                    id: i,
-                    week: Math.ceil(i / 7),
-                    phase: isWeek4 ? 'Metabolic Reset Break' : 'Fat Loss Induction Phase',
-                    targetCalories: isWeek4 ? 1900 : 1450,
-                    weight: '',
-                    manualCalories: 0,
-                    activityDone: false,
-                    activityType: '10k Steps', 
-                    datesCount: 5,
-                    eggCount: 6,
-                    coffeeCount: 2,
-                    dumbbellLifts: 0,
-                    situps: 0,
-                    breakfastItems: [
-                        { id: 'b1', type: 'coffee1', label: 'Coffee #1', checked: false },
-                        { id: 'b2', type: 'ragi', label: 'Ragi Porridge w/ Curd', checked: false }
-                    ],
-                    lunchItems: [
-                        { id: 'l1', type: 'salad', label: isWeek4 ? 'Big Salad (Doubled Base + 2 tbsp Ranch)' : 'Big Salad (Doubled Base + 1 tbsp Ranch)', checked: false }
-                    ],
-                    meals: [
-                        { key: 'snack', section: 'Snack', label: isWeek4 ? 'Coffee #2 + Protein Core + Handful Nuts' : 'Coffee #2 + Protein Core (Shake/Yogurt)', type: isWeek4 ? 'resetSnack' : 'inductionSnack', checked: false },
-                        { key: 'dinner', section: 'Dinner', label: isWeek4 ? 'Greens + 1 Cup Brown Rice / 2 Rotis' : 'Greens tossed in Spinach & Kale', type: isWeek4 ? 'resetDinner' : 'inductionDinner', checked: false }
-                    ],
-                    customItems: [], // Stores user added custom rows dynamically per day
-                    burned: false,
-                    finalCalculatedCalories: 0
-                });
-            }
-        }
-
-        function updateMasterConfig() {
-            configValues.ragi = parseInt(document.getElementById('cfg-ragi').value, 10) || 0;
-            configValues.coffee = parseInt(document.getElementById('cfg-coffee').value, 10) || 0;
-            configValues.saladInduction = parseInt(document.getElementById('cfg-salad-ind').value, 10) || 0;
-            configValues.saladReset = parseInt(document.getElementById('cfg-salad-res').value, 10) || 0;
-            
-            localStorage.setItem('metabolic_tracker_config_v1', JSON.stringify(configValues));
-            
-            // Re-render UI components to show clean cal shifts instantly
-            document.getElementById('lbl-coffee-unit-cals').innerText = `${configValues.coffee} kcal ea`;
-            const day = days.find(d => d.id === activeDayId);
-            if (day) {
-                loadActiveDay();
-            }
-        }
-
         function saveState() {
-            localStorage.setItem('metabolic_tracker_days_native_v7', JSON.stringify(days));
+            localStorage.setItem('metabolic_tracker_days_native_v6', JSON.stringify(days));
         }
 
         function renderSidebar() {
@@ -672,26 +580,12 @@
             document.getElementById('global-score').innerText = `${totalBurned} / 28 Days`;
         }
 
-        function getItemCalories(item, isWeek4) {
-            if (item.calories !== undefined) return item.calories; // Custom additions
-            if (item.type === 'coffee1') return configValues.coffee;
-            if (item.type === 'ragi') return configValues.ragi;
-            if (item.type === 'salad') return isWeek4 ? configValues.saladReset : configValues.saladInduction;
-            if (item.type === 'inductionSnack') return 205;
-            if (item.type === 'resetSnack') return 300;
-            if (item.type === 'inductionDinner') return 100;
-            if (item.type === 'resetDinner') return 300;
-            return 0;
-        }
-
         function loadActiveDay() {
             const day = days.find(d => d.id === activeDayId);
-            const isWeek4 = day.id > 21;
             
             document.getElementById('day-title').innerText = `Day ${day.id} Setup`;
             document.getElementById('phase-badge').innerText = day.phase.toUpperCase();
             document.getElementById('calorie-budget').innerText = `~${day.targetCalories} kcal`;
-            document.getElementById('lbl-coffee-unit-cals').innerText = `${configValues.coffee} kcal ea`;
             
             if (day.burned) {
                 document.getElementById('active-day-content').style.display = 'none';
@@ -707,13 +601,6 @@
             const bList = document.getElementById('breakfast-list');
             bList.innerHTML = '';
             day.breakfastItems.forEach(item => {
-                const cals = getItemCalories(item, isWeek4);
-                bList.appendChild(createCheckItem(item.label, cals, item.checked, () => {
-                    item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
-                }));
-            });
-            // Append custom breakfast items if any exist
-            (day.customItems || []).filter(i => i.cat === 'breakfast').forEach(item => {
                 bList.appendChild(createCheckItem(item.label, item.calories, item.checked, () => {
                     item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
                 }));
@@ -723,13 +610,6 @@
             const lList = document.getElementById('lunch-list');
             lList.innerHTML = '';
             day.lunchItems.forEach(item => {
-                const cals = getItemCalories(item, isWeek4);
-                lList.appendChild(createCheckItem(item.label, cals, item.checked, () => {
-                    item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
-                }));
-            });
-            // Append custom lunch items if any exist
-            (day.customItems || []).filter(i => i.cat === 'lunch').forEach(item => {
                 lList.appendChild(createCheckItem(item.label, item.calories, item.checked, () => {
                     item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
                 }));
@@ -739,8 +619,7 @@
             const sList = document.getElementById('standard-meals-list');
             sList.innerHTML = '';
             day.meals.forEach(meal => {
-                const cals = getItemCalories(meal, isWeek4);
-                const item = createCheckItem(`[${meal.section}] ${meal.label}`, cals, meal.checked, () => {
+                const item = createCheckItem(`[${meal.section}] ${meal.label}`, meal.calories, meal.checked, () => {
                     meal.checked = !meal.checked; saveState(); calculateTotalIntake(day); validateForm();
                 });
                 sList.appendChild(item);
@@ -792,7 +671,7 @@
             return div;
         }
 
-        function addCustomMealItem(category, inputId, calorieInputId) {
+        function addCustomMealItem(field, inputId, calorieInputId) {
             const input = document.getElementById(inputId);
             const calInput = document.getElementById(calorieInputId);
             
@@ -801,14 +680,11 @@
             if(!val) return;
             
             const day = days.find(d => d.id === activeDayId);
-            if(!day.customItems) day.customItems = [];
-            
-            day.customItems.push({ 
-                id: Date.now().toString(),
-                cat: category === 'breakfastItems' ? 'breakfast' : 'lunch',
+            day[field].push({ 
+                id: Date.now().toString(), 
                 label: val, 
                 calories: calVal, 
-                checked: true 
+                checked: true // Defaults to checked so it counts instantly
             });
             
             input.value = '';
@@ -833,23 +709,18 @@
 
         function calculateTotalIntake(day) {
             let totalFoodCals = 0;
-            const isWeek4 = day.id > 21;
 
-            day.breakfastItems.forEach(i => { if(i.checked) totalFoodCals += getItemCalories(i, isWeek4); });
-            day.lunchItems.forEach(i => { if(i.checked) totalFoodCals += getItemCalories(i, isWeek4); });
-            day.meals.forEach(m => { if(m.checked) totalFoodCals += getItemCalories(m, isWeek4); });
-            
-            if(day.customItems) {
-                day.customItems.forEach(c => { if(c.checked) totalFoodCals += c.calories; });
-            }
+            day.breakfastItems.forEach(i => { if(i.checked) totalFoodCals += i.calories; });
+            day.lunchItems.forEach(i => { if(i.checked) totalFoodCals += i.calories; });
+            day.meals.forEach(m => { if(m.checked) totalFoodCals += m.calories; });
 
             totalFoodCals += (day.datesCount * 66);
             totalFoodCals += (day.eggCount * 70);
             
-            // Smart Coffee validation logic using calibration state
-            let baseCoffeeChecked = day.breakfastItems.find(i => i.type === 'coffee1' && i.checked);
+            // Coffee calibration rule
+            let baseCoffeeChecked = day.breakfastItems.find(i => i.label === 'Coffee #1' && i.checked);
             let activeExtraCoffees = baseCoffeeChecked ? Math.max(0, day.coffeeCount - 1) : day.coffeeCount;
-            totalFoodCals += (activeExtraCoffees * configValues.coffee);
+            totalFoodCals += (activeExtraCoffees * 45);
             totalFoodCals += (day.manualCalories || 0);
 
             document.getElementById('live-intake-calories').innerText = `${totalFoodCals} kcal`;
@@ -969,5 +840,9 @@
 
         window.onload = initApp;
     </script>
+    <div style="padding: 16px; border-top: 1px solid var(--border-color);">
+    <button onclick="document.getElementById('mobile-copy-box').value = localStorage.getItem('metabolic_tracker_days_native_v6')" style="width:100%; padding:12px; background:var(--cyan); color:black; font-weight:bold; border-radius:10px; border:none; margin-bottom:8px;">Extract Backup Data</button>
+    <textarea id="mobile-copy-box" style="width:100%; height:150px; background:#000; color:#fff; font-family:monospace; font-size:12px; border-radius:10px; padding:8px; box-sizing:border-box;" placeholder="Your raw data will appear here..."></textarea>
+</div>
 </body>
 </html>
