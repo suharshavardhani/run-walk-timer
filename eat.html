@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metabolic Calibration Console</title>
+    <style>
+        :root {
+            --bg-main: #020617;
+            --bg-card: #0f172a;
+            --bg-input: #020617;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --accent: #6366f1;
+            --emerald: #10b981;
+            --orange: #f97316;
+            --cyan: #06b6d4;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 12px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .header {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        h1, h2, h3, h4 { margin: 0; font-weight: 800; }
+        h1 { font-size: 20px; letter-spacing: -0.5px; }
+        .subtitle { color: var(--text-muted); font-size: 11px; margin-top: 4px; }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        @media(min-width: 768px) {
+            .grid { grid-template-columns: 200px 1fr; }
+        }
+
+        .sidebar {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 10px;
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media(min-width: 768px) {
+            .sidebar { flex-direction: column; overflow-x: visible; max-height: 70vh; overflow-y: auto; }
+        }
+
+        .day-btn {
+            background: #0f172a;
+            border: 1px solid transparent;
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: center;
+            min-width: 75px;
+            flex-shrink: 0;
+        }
+        @media(min-width: 768px) {
+            .day-btn { text-align: left; }
+        }
+        .day-btn.active {
+            background: var(--accent);
+            font-weight: bold;
+        }
+        .day-btn.burned {
+            border-left: 3px solid var(--orange);
+            opacity: 0.7;
+        }
+
+        .main-pane {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+        }
+        .section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            border-bottom: 1px solid #1e293b;
+            padding-bottom: 6px;
+            margin-top: 24px;
+        }
+
+        .cluster {
+            background: rgba(2, 6, 23, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        .cluster-title {
+            font-size: 12px;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .item-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        @media(min-width: 480px) {
+            .item-list { grid-template-columns: 1fr 1fr; }
+        }
+
+        .check-item {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            min-height: 24px;
+        }
+        .check-item-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .check-item input {
+            accent-color: var(--emerald);
+            cursor: pointer;
+            transform: scale(1.2);
+        }
+        .cal-badge {
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--cyan);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .input-split-group {
+            display: flex;
+            gap: 6px;
+        }
+        .input-split-group input[type="text"] {
+            flex: 2;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            -webkit-appearance: none;
+        }
+        .input-split-group input[type="number"], .setting-input {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 10px;
+            color: var(--cyan);
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 14px;
+            -webkit-appearance: none;
+            text-align: center;
+        }
+        .input-split-group button, .counter-btn {
+            background: #1e293b;
+            border: none;
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .tracker-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        @media(min-width: 600px) {
+            .tracker-row { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        .tracker-card {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 14px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .counter-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .counter-val { font-family: monospace; font-weight: 900; font-size: 18px; min-width: 24px; text-align: center; }
+
+        .burn-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #090d16;
+            border: 1px solid #1e1b4b;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+        .live-burn-val {
+            color: var(--orange);
+            font-family: monospace;
+            font-weight: 900;
+            font-size: 16px;
+        }
+        .live-intake-val {
+            color: var(--cyan);
+            font-family: monospace;
+            font-weight: 900;
+            font-size: 16px;
+        }
+
+        .biometrics {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        @media(min-width: 480px) {
+            .biometrics { grid-template-columns: 1fr 1fr; }
+        }
+
+        .btn-burn {
+            width: 100%;
+            background: linear-gradient(90deg, var(--orange), #f59e0b);
+            border: none;
+            color: #020617;
+            font-weight: 900;
+            text-transform: uppercase;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+        .btn-burn:disabled {
+            background: #1e293b;
+            color: #475569;
+            cursor: not-allowed;
+            background-image: none;
+        }
+
+        .toggle-tab-group {
+            display: flex;
+            width: 100%;
+            background: #020617;
+            padding: 3px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+        .toggle-tab {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: bold;
+            padding: 12px 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+        .toggle-tab.active {
+            background: #1e293b;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .report-box {
+            background: rgba(2, 6, 23, 0.6);
+            border: 1px solid var(--orange);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 12px;
+        }
+        .report-metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #1e293b;
+            font-size: 13px;
+        }
+        .unburn-btn {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            padding: 12px;
+            width: 100%;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 16px;
+        }
+
+        /* Settings CSS */
+        .settings-panel {
+            background: #0b1329;
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        @media(min-width: 480px) {
+            .settings-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .setting-field {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-main);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        .setting-field label { font-size: 12px; color: var(--text-muted); }
+        .setting-field input { width: 65px; padding: 6px; font-size: 12px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div>
+                <h1>Metabolic Console</h1>
+                <div class="subtitle">77 kg &rarr; 62 kg Target Journey</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 8px; text-transform: uppercase; color: var(--text-muted)">Burned</div>
+                <div id="global-score" style="font-size: 16px; font-weight: 900;">0 / 28 Days</div>
+            </div>
+        </div>
+
+        <!-- Dynamic Calibration Customization Box -->
+        <div class="settings-panel">
+            <h4 style="font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px;">⚙ Calorie Baseline Settings (Customize Defaults)</h4>
+            <div class="settings-grid">
+                <div class="setting-field">
+                    <label>Ragi Porridge Base:</label>
+                    <input type="number" id="cfg-ragi" class="setting-input" value="80" oninput="updateMasterConfig()">
+                </div>
+                <div class="setting-field">
+                    <label>Black Coffee Blend:</label>
+                    <input type="number" id="cfg-coffee" class="setting-input" value="45" oninput="updateMasterConfig()">
+                </div>
+                <div class="setting-field">
+                    <label>Induction Salad (W1-3):</label>
+                    <input type="number" id="cfg-salad-ind" class="setting-input" value="180" oninput="updateMasterConfig()">
+                </div>
+                <div class="setting-field">
+                    <label>Reset Salad (W4):</label>
+                    <input type="number" id="cfg-salad-res" class="setting-input" value="270" oninput="updateMasterConfig()">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- Sidebar -->
+            <div class="sidebar" id="sidebar-target"></div>
+
+            <!-- Workspace Pane -->
+            <div class="main-pane">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;" id="meta-header">
+                    <div>
+                        <span id="phase-badge" style="font-size: 9px; padding: 2px 6px; border-radius: 4px; background: rgba(16,185,129,0.1); color: var(--emerald); border: 1px solid rgba(16,185,129,0.2);">INDUCTION PHASE</span>
+                        <h2 id="day-title" style="margin-top: 4px; font-size: 18px;">Day 1 Diagnostics</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 9px; color: var(--text-muted); display: block;">BUDGET</span>
+                        <span id="calorie-budget" style="font-family: monospace; color: var(--emerald); font-weight: bold; font-size: 14px;">~1450 kcal</span>
+                    </div>
+                </div>
+
+                <!-- Input Tracker Layout -->
+                <div id="active-day-content">
+                    <!-- 1. Nutrition Audit Section -->
+                    <div class="section-title">1. Nutrition Audit</div>
+                    
+                    <!-- Breakfast Cluster -->
+                    <div class="cluster">
+                        <span class="cluster-title">Breakfast Items</span>
+                        <div class="item-list" id="breakfast-list"></div>
+                        <div class="input-split-group">
+                            <input type="text" id="breakfast-input" placeholder="Extra Breakfast Item...">
+                            <input type="number" id="breakfast-input-cal" placeholder="Kcal">
+                            <button onclick="addCustomMealItem('breakfastItems', 'breakfast-input', 'breakfast-input-cal')">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Lunch Cluster -->
+                    <div class="cluster">
+                        <span class="cluster-title">Lunch Items</span>
+                        <div class="item-list" id="lunch-list"></div>
+                        <div class="input-split-group">
+                            <input type="text" id="lunch-input" placeholder="Extra Lunch Item...">
+                            <input type="number" id="lunch-input-cal" placeholder="Kcal">
+                            <button onclick="addCustomMealItem('lunchItems', 'lunch-input', 'lunch-input-cal')">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Rest of meals -->
+                    <div class="cluster">
+                        <span class="cluster-title">Scheduled Protocol Items</span>
+                        <div class="item-list" id="standard-meals-list" style="margin-bottom: 0;"></div>
+                    </div>
+
+                    <!-- Custom Add-On Override Input -->
+                    <div class="cluster" style="background: rgba(6, 182, 212, 0.05); border-color: rgba(6, 182, 212, 0.2);">
+                        <span class="cluster-title" style="color: var(--cyan)">Manual Calorie Overrides</span>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label style="font-size: 11px; color: var(--text-muted);">Unmapped additions or baseline changes:</label>
+                            <input type="number" id="manual-calories" style="background:var(--bg-input); border:1px solid var(--border-color); padding:12px; border-radius:10px; color:white; font-size:14px; -webkit-appearance:none;" placeholder="0" oninput="handleManualCalorieInput(this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Live Food Intake Box -->
+                    <div class="burn-banner" style="background: #042f2e; border-color: #115e59; margin-bottom: 20px;">
+                        <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #2dd4bf">Consumption Tally</span>
+                        <span class="live-intake-val" id="live-intake-calories">0 kcal</span>
+                    </div>
+
+                    <!-- 2. Quantitative Section -->
+                    <div class="section-title">2. Quantitative Trackers</div>
+                    <div class="tracker-row">
+                        <div class="tracker-card">
+                            <div><span style="font-size:12px; font-weight:bold; display:block;">Medjool Dates</span><span style="font-size:10px; color:var(--text-muted)">66 kcal ea</span></div>
+                            <div class="counter-controls">
+                                <button class="counter-btn" onclick="adjustCounter('datesCount', -1)">-</button>
+                                <span class="counter-val" id="val-dates" style="color: #fbbf24">5</span>
+                                <button class="counter-btn" onclick="adjustCounter('datesCount', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="tracker-card">
+                            <div><span style="font-size:12px; font-weight:bold; display:block;">Dinner Eggs</span><span style="font-size:10px; color:var(--text-muted)">70 kcal ea</span></div>
+                            <div class="counter-controls">
+                                <button class="counter-btn" onclick="adjustCounter('eggCount', -1)">-</button>
+                                <span class="counter-val" id="val-eggs" style="color: var(--emerald)">6</span>
+                                <button class="counter-btn" onclick="adjustCounter('eggCount', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="tracker-card">
+                            <div><span style="font-size:12px; font-weight:bold; display:block;">Total Coffees (w/ Milk)</span><span style="font-size:10px; color:var(--text-muted)" id="lbl-coffee-unit-cals">45 kcal ea</span></div>
+                            <div class="counter-controls">
+                                <button class="counter-btn" onclick="adjustCounter('coffeeCount', -1)">-</button>
+                                <span class="counter-val" id="val-coffee" style="color: #818cf8">2</span>
+                                <button class="counter-btn" onclick="adjustCounter('coffeeCount', 1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Strength and Burn Diagnostics -->
+                    <div class="section-title">3. Strength & Burn Progress</div>
+                    <div class="burn-banner">
+                        <span style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: var(--text-muted)">Reduced Output</span>
+                        <span class="live-burn-val" id="live-reduced-calories">-0.00 kcal</span>
+                    </div>
+                    <div class="tracker-row" style="grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px;">
+                        <div class="tracker-card">
+                            <div><span style="font-size:12px; font-weight:bold; display:block;">10 lbs Dumbbell Lifts</span><span style="font-size:10px; color:var(--text-muted)" id="label-db-cals">0.00 cut</span></div>
+                            <div class="counter-controls">
+                                <button class="counter-btn" onclick="adjustCounter('dumbbellLifts', -5)">-5</button>
+                                <span class="counter-val" id="val-lifts">0</span>
+                                <button class="counter-btn" onclick="adjustCounter('dumbbellLifts', 5)">+5</button>
+                            </div>
+                        </div>
+                        <div class="tracker-card">
+                            <div><span style="font-size:12px; font-weight:bold; display:block;">Situps Tracked</span><span style="font-size:10px; color:var(--text-muted)" id="label-situp-cals">0.00 cut</span></div>
+                            <div class="counter-controls">
+                                <button class="counter-btn" onclick="adjustCounter('situps', -20)">-20</button>
+                                <span class="counter-val" id="val-situps">0</span>
+                                <button class="counter-btn" onclick="adjustCounter('situps', 20)">+20</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 & 5. Activity & Fasted Weight -->
+                    <div class="section-title">4 & 5. Activity & Fasted Weight</div>
+                    <div class="biometrics">
+                        <div class="tracker-card" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+                            <span style="font-size: 11px; font-weight: bold; color: var(--text-muted);">EXPENDITURE METHOD</span>
+                            <div class="toggle-tab-group">
+                                <button id="tab-step" class="toggle-tab" onclick="setActivityType('10k Steps')">10k Steps</button>
+                                <button id="tab-tennis" class="toggle-tab" onclick="setActivityType('1 Hr Tennis')">1 Hr Tennis</button>
+                            </div>
+                            <button id="activity-completion-btn" onclick="toggleActivityDone()" style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border-color); background:transparent; color: var(--text-muted); font-size:13px; font-weight:bold; cursor:pointer; -webkit-appearance:none;">Log Activity Output</button>
+                        </div>
+
+                        <div class="tracker-card" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+                            <span style="font-size: 11px; font-weight: bold; color: var(--text-muted);">FASTED MORNING WEIGHT</span>
+                            <div style="position: relative; width: 100%;">
+                                <input type="number" id="weight-input" step="0.1" placeholder="77.0" oninput="handleWeightInput(this.value)" style="width:100%; box-sizing:border-box; background:var(--bg-input); border:1px solid var(--border-color); padding:12px; border-radius:10px; color:white; font-family:monospace; font-weight:bold; font-size:14px;">
+                                <span style="position:absolute; right:12px; top:13px; font-size:12px; font-weight:bold; color:var(--text-muted); pointer-events:none;">KG</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Burn Button -->
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 16px;">
+                        <button class="btn-burn" id="burn-slate-btn" onclick="burnActiveSlate()" disabled>Burn Active Slate</button>
+                    </div>
+                </div>
+                
+                <!-- Reporting Output Layout -->
+                <div id="burned-day-message" style="display:none;">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <span style="font-size: 20px;">🔥</span>
+                        <h3 style="color: var(--orange); font-size: 18px;">Daily Metabolic Report</h3>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 12px 0;">This slate has been finalized and committed to your history storage.</p>
+                    
+                    <div class="report-box" id="report-content-target"></div>
+
+                    <button class="unburn-btn" onclick="unburnActiveSlate()">↩ Reopen & Edit Slate</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let days = [];
+        let activeDayId = 1;
+        
+        // Master calibration settings object
+        let configValues = {
+            ragi: 80,
+            coffee: 45,
+            saladInduction: 180,
+            saladReset: 270
+        };
+
+        function initApp() {
+            // Load custom configurations if they exist
+            const savedConfig = localStorage.getItem('metabolic_tracker_config_v1');
+            if (savedConfig) {
+                configValues = JSON.parse(savedConfig);
+                document.getElementById('cfg-ragi').value = configValues.ragi;
+                document.getElementById('cfg-coffee').value = configValues.coffee;
+                document.getElementById('cfg-salad-ind').value = configValues.saladInduction;
+                document.getElementById('cfg-salad-res').value = configValues.saladReset;
+            }
+
+            // Version v7 tracks structures cleanly with active calibration logic
+            const savedDays = localStorage.getItem('metabolic_tracker_days_native_v7');
+            if (savedDays) {
+                days = JSON.parse(savedDays);
+            } else {
+                buildFreshDataset();
+            }
+            renderSidebar();
+            loadActiveDay();
+        }
+
+        function buildFreshDataset() {
+            days = [];
+            for (let i = 1; i <= 28; i++) {
+                const isWeek4 = i > 21;
+                days.push({
+                    id: i,
+                    week: Math.ceil(i / 7),
+                    phase: isWeek4 ? 'Metabolic Reset Break' : 'Fat Loss Induction Phase',
+                    targetCalories: isWeek4 ? 1900 : 1450,
+                    weight: '',
+                    manualCalories: 0,
+                    activityDone: false,
+                    activityType: '10k Steps', 
+                    datesCount: 5,
+                    eggCount: 6,
+                    coffeeCount: 2,
+                    dumbbellLifts: 0,
+                    situps: 0,
+                    breakfastItems: [
+                        { id: 'b1', type: 'coffee1', label: 'Coffee #1', checked: false },
+                        { id: 'b2', type: 'ragi', label: 'Ragi Porridge w/ Curd', checked: false }
+                    ],
+                    lunchItems: [
+                        { id: 'l1', type: 'salad', label: isWeek4 ? 'Big Salad (Doubled Base + 2 tbsp Ranch)' : 'Big Salad (Doubled Base + 1 tbsp Ranch)', checked: false }
+                    ],
+                    meals: [
+                        { key: 'snack', section: 'Snack', label: isWeek4 ? 'Coffee #2 + Protein Core + Handful Nuts' : 'Coffee #2 + Protein Core (Shake/Yogurt)', type: isWeek4 ? 'resetSnack' : 'inductionSnack', checked: false },
+                        { key: 'dinner', section: 'Dinner', label: isWeek4 ? 'Greens + 1 Cup Brown Rice / 2 Rotis' : 'Greens tossed in Spinach & Kale', type: isWeek4 ? 'resetDinner' : 'inductionDinner', checked: false }
+                    ],
+                    customItems: [], // Stores user added custom rows dynamically per day
+                    burned: false,
+                    finalCalculatedCalories: 0
+                });
+            }
+        }
+
+        function updateMasterConfig() {
+            configValues.ragi = parseInt(document.getElementById('cfg-ragi').value, 10) || 0;
+            configValues.coffee = parseInt(document.getElementById('cfg-coffee').value, 10) || 0;
+            configValues.saladInduction = parseInt(document.getElementById('cfg-salad-ind').value, 10) || 0;
+            configValues.saladReset = parseInt(document.getElementById('cfg-salad-res').value, 10) || 0;
+            
+            localStorage.setItem('metabolic_tracker_config_v1', JSON.stringify(configValues));
+            
+            // Re-render UI components to show clean cal shifts instantly
+            document.getElementById('lbl-coffee-unit-cals').innerText = `${configValues.coffee} kcal ea`;
+            const day = days.find(d => d.id === activeDayId);
+            if (day) {
+                loadActiveDay();
+            }
+        }
+
+        function saveState() {
+            localStorage.setItem('metabolic_tracker_days_native_v7', JSON.stringify(days));
+        }
+
+        function renderSidebar() {
+            const container = document.getElementById('sidebar-target');
+            container.innerHTML = '';
+            let totalBurned = 0;
+
+            days.forEach(d => {
+                if (d.burned) totalBurned++;
+                const btn = document.createElement('button');
+                btn.className = `day-btn ${d.id === activeDayId ? 'active' : ''} ${d.burned ? 'burned' : ''}`;
+                btn.innerHTML = `<span style="opacity:0.6; font-family:monospace; margin-right:2px;">D${d.id}</span>W${d.week}`;
+                btn.onclick = () => { activeDayId = d.id; renderSidebar(); loadActiveDay(); };
+                container.appendChild(btn);
+            });
+
+            document.getElementById('global-score').innerText = `${totalBurned} / 28 Days`;
+        }
+
+        function getItemCalories(item, isWeek4) {
+            if (item.calories !== undefined) return item.calories; // Custom additions
+            if (item.type === 'coffee1') return configValues.coffee;
+            if (item.type === 'ragi') return configValues.ragi;
+            if (item.type === 'salad') return isWeek4 ? configValues.saladReset : configValues.saladInduction;
+            if (item.type === 'inductionSnack') return 205;
+            if (item.type === 'resetSnack') return 300;
+            if (item.type === 'inductionDinner') return 100;
+            if (item.type === 'resetDinner') return 300;
+            return 0;
+        }
+
+        function loadActiveDay() {
+            const day = days.find(d => d.id === activeDayId);
+            const isWeek4 = day.id > 21;
+            
+            document.getElementById('day-title').innerText = `Day ${day.id} Setup`;
+            document.getElementById('phase-badge').innerText = day.phase.toUpperCase();
+            document.getElementById('calorie-budget').innerText = `~${day.targetCalories} kcal`;
+            document.getElementById('lbl-coffee-unit-cals').innerText = `${configValues.coffee} kcal ea`;
+            
+            if (day.burned) {
+                document.getElementById('active-day-content').style.display = 'none';
+                document.getElementById('burned-day-message').style.display = 'block';
+                buildDayReport(day);
+                return;
+            } else {
+                document.getElementById('active-day-content').style.display = 'block';
+                document.getElementById('burned-day-message').style.display = 'none';
+            }
+
+            // Render Breakfast
+            const bList = document.getElementById('breakfast-list');
+            bList.innerHTML = '';
+            day.breakfastItems.forEach(item => {
+                const cals = getItemCalories(item, isWeek4);
+                bList.appendChild(createCheckItem(item.label, cals, item.checked, () => {
+                    item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
+                }));
+            });
+            // Append custom breakfast items if any exist
+            (day.customItems || []).filter(i => i.cat === 'breakfast').forEach(item => {
+                bList.appendChild(createCheckItem(item.label, item.calories, item.checked, () => {
+                    item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
+                }));
+            });
+
+            // Render Lunch
+            const lList = document.getElementById('lunch-list');
+            lList.innerHTML = '';
+            day.lunchItems.forEach(item => {
+                const cals = getItemCalories(item, isWeek4);
+                lList.appendChild(createCheckItem(item.label, cals, item.checked, () => {
+                    item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
+                }));
+            });
+            // Append custom lunch items if any exist
+            (day.customItems || []).filter(i => i.cat === 'lunch').forEach(item => {
+                lList.appendChild(createCheckItem(item.label, item.calories, item.checked, () => {
+                    item.checked = !item.checked; saveState(); calculateTotalIntake(day); validateForm();
+                }));
+            });
+
+            // Render Standard Meals
+            const sList = document.getElementById('standard-meals-list');
+            sList.innerHTML = '';
+            day.meals.forEach(meal => {
+                const cals = getItemCalories(meal, isWeek4);
+                const item = createCheckItem(`[${meal.section}] ${meal.label}`, cals, meal.checked, () => {
+                    meal.checked = !meal.checked; saveState(); calculateTotalIntake(day); validateForm();
+                });
+                sList.appendChild(item);
+            });
+
+            // Set Inputs and Counters
+            document.getElementById('val-dates').innerText = day.datesCount;
+            document.getElementById('val-eggs').innerText = day.eggCount;
+            document.getElementById('val-coffee').innerText = day.coffeeCount;
+            document.getElementById('val-lifts').innerText = day.dumbbellLifts;
+            document.getElementById('val-situps').innerText = day.situps;
+            document.getElementById('weight-input').value = day.weight;
+            document.getElementById('manual-calories').value = day.manualCalories || '';
+
+            updateCalorieBurnCalculations(day);
+            updateActivityUI(day);
+            calculateTotalIntake(day);
+            validateForm();
+        }
+
+        function createCheckItem(label, calories, isChecked, toggleFn) {
+            const div = document.createElement('div');
+            div.className = 'check-item';
+            
+            const leftPart = document.createElement('div');
+            leftPart.className = 'check-item-left';
+            
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.checked = isChecked;
+            
+            const span = document.createElement('span');
+            span.innerText = label;
+            
+            leftPart.appendChild(chk);
+            leftPart.appendChild(span);
+            
+            const badge = document.createElement('span');
+            badge.className = 'cal-badge';
+            badge.innerText = `${calories} kcal`;
+            
+            div.onclick = (e) => {
+                if(e.target !== chk) chk.checked = !chk.checked;
+                toggleFn();
+            };
+            
+            div.appendChild(leftPart);
+            div.appendChild(badge);
+            return div;
+        }
+
+        function addCustomMealItem(category, inputId, calorieInputId) {
+            const input = document.getElementById(inputId);
+            const calInput = document.getElementById(calorieInputId);
+            
+            const val = input.value.trim();
+            const calVal = parseInt(calInput.value.trim(), 10) || 0;
+            if(!val) return;
+            
+            const day = days.find(d => d.id === activeDayId);
+            if(!day.customItems) day.customItems = [];
+            
+            day.customItems.push({ 
+                id: Date.now().toString(),
+                cat: category === 'breakfastItems' ? 'breakfast' : 'lunch',
+                label: val, 
+                calories: calVal, 
+                checked: true 
+            });
+            
+            input.value = '';
+            calInput.value = '';
+            saveState();
+            loadActiveDay();
+        }
+
+        function adjustCounter(field, delta) {
+            const day = days.find(d => d.id === activeDayId);
+            day[field] = Math.max(0, day[field] + delta);
+            saveState();
+            loadActiveDay();
+        }
+
+        function handleManualCalorieInput(val) {
+            const day = days.find(d => d.id === activeDayId);
+            day.manualCalories = parseInt(val, 10) || 0;
+            saveState();
+            calculateTotalIntake(day);
+        }
+
+        function calculateTotalIntake(day) {
+            let totalFoodCals = 0;
+            const isWeek4 = day.id > 21;
+
+            day.breakfastItems.forEach(i => { if(i.checked) totalFoodCals += getItemCalories(i, isWeek4); });
+            day.lunchItems.forEach(i => { if(i.checked) totalFoodCals += getItemCalories(i, isWeek4); });
+            day.meals.forEach(m => { if(m.checked) totalFoodCals += getItemCalories(m, isWeek4); });
+            
+            if(day.customItems) {
+                day.customItems.forEach(c => { if(c.checked) totalFoodCals += c.calories; });
+            }
+
+            totalFoodCals += (day.datesCount * 66);
+            totalFoodCals += (day.eggCount * 70);
+            
+            // Smart Coffee validation logic using calibration state
+            let baseCoffeeChecked = day.breakfastItems.find(i => i.type === 'coffee1' && i.checked);
+            let activeExtraCoffees = baseCoffeeChecked ? Math.max(0, day.coffeeCount - 1) : day.coffeeCount;
+            totalFoodCals += (activeExtraCoffees * configValues.coffee);
+            totalFoodCals += (day.manualCalories || 0);
+
+            document.getElementById('live-intake-calories').innerText = `${totalFoodCals} kcal`;
+            return totalFoodCals;
+        }
+
+        function updateCalorieBurnCalculations(day) {
+            const dbCals = day.dumbbellLifts * 0.05;
+            const situpCals = day.situps * 0.15;
+            const total = dbCals + situpCals;
+
+            document.getElementById('label-db-cals').innerText = `${dbCals.toFixed(1)} cut`;
+            document.getElementById('label-situp-cals').innerText = `${situpCals.toFixed(1)} cut`;
+            document.getElementById('live-reduced-calories').innerText = `-${total.toFixed(2)} kcal`;
+        }
+
+        function setActivityType(type) {
+            const day = days.find(d => d.id === activeDayId);
+            day.activityType = type;
+            saveState();
+            updateActivityUI(day);
+        }
+
+        function updateActivityUI(day) {
+            const tabStep = document.getElementById('tab-step');
+            const tabTennis = document.getElementById('tab-tennis');
+            const compBtn = document.getElementById('activity-completion-btn');
+
+            if (day.activityType === '10k Steps') {
+                tabStep.classList.add('active');
+                tabTennis.classList.remove('active');
+            } else {
+                tabTennis.classList.add('active');
+                tabStep.classList.remove('active');
+            }
+
+            if (day.activityDone) {
+                compBtn.style.background = 'rgba(16,185,129,0.1)';
+                compBtn.style.borderColor = 'rgba(16,185,129,0.4)';
+                compBtn.style.color = 'var(--emerald)';
+                compBtn.innerText = '✓ Output Logged';
+            } else {
+                compBtn.style.background = 'transparent';
+                compBtn.style.borderColor = 'var(--border-color)';
+                compBtn.style.color = 'var(--text-muted)';
+                compBtn.innerText = `Log ${day.activityType}`;
+            }
+        }
+
+        function toggleActivityDone() {
+            const day = days.find(d => d.id === activeDayId);
+            day.activityDone = !day.activityDone;
+            saveState();
+            updateActivityUI(day);
+            validateForm();
+        }
+
+        function handleWeightInput(val) {
+            const day = days.find(d => d.id === activeDayId);
+            day.weight = val;
+            saveState();
+            validateForm();
+        }
+
+        function validateForm() {
+            const day = days.find(d => d.id === activeDayId);
+            
+            const bChecked = day.breakfastItems.every(i => i.checked);
+            const lChecked = day.lunchItems.every(i => i.checked);
+            const standardChecked = day.meals.every(m => m.checked);
+            const weightOk = day.weight && day.weight.trim() !== '';
+            
+            const isReady = bChecked && lChecked && standardChecked && day.activityDone && weightOk;
+            document.getElementById('burn-slate-btn').disabled = !isReady;
+        }
+
+        function burnActiveSlate() {
+            const day = days.find(d => d.id === activeDayId);
+            day.finalCalculatedCalories = calculateTotalIntake(day);
+            day.burned = true;
+            saveState();
+            renderSidebar();
+            loadActiveDay();
+        }
+
+        function unburnActiveSlate() {
+            const day = days.find(d => d.id === activeDayId);
+            day.burned = false;
+            saveState();
+            renderSidebar();
+            loadActiveDay();
+        }
+
+        function buildDayReport(day) {
+            const container = document.getElementById('report-content-target');
+            const totalCut = (day.dumbbellLifts * 0.05) + (day.situps * 0.15);
+            
+            let html = `
+                <div class="report-metric"><strong>Weight:</strong> <span style="color:var(--emerald); font-family:monospace;">${day.weight} KG</span></div>
+                <div class="report-metric"><strong>Budget:</strong> <span style="font-family:monospace;">${day.targetCalories} kcal</span></div>
+                <div class="report-metric"><strong>Logged Intake:</strong> <span style="color:var(--cyan); font-family:monospace;">${day.finalCalculatedCalories} kcal</span></div>
+                <div class="report-metric"><strong>Overrides:</strong> <span style="font-family:monospace;">+${day.manualCalories || 0} kcal</span></div>
+                <div class="report-metric"><strong>Activity:</strong> <span style="color:var(--emerald);">✓ ${day.activityType}</span></div>
+                <div class="report-metric"><strong>Routine Trim:</strong> <span style="color:var(--orange); font-family:monospace;">-${totalCut.toFixed(1)} kcal</span></div>
+                
+                <h4 style="margin: 12px 0 6px 0; font-size:11px; text-transform:uppercase; color:var(--accent);">Quantities Logged</h4>
+                <ul style="margin: 0; padding-left: 16px; font-size: 13px; color: var(--text-muted); display:flex; flex-direction:column; gap:4px;">
+                    <li>Dates: ${day.datesCount} units</li>
+                    <li>Eggs: ${day.eggCount} units</li>
+                    <li>Coffees: ${day.coffeeCount} units</li>
+                    <li>Lifts Volume: ${day.dumbbellLifts} reps</li>
+                    <li>Situps Volume: ${day.situps} reps</li>
+                </ul>
+            `;
+            container.innerHTML = html;
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
